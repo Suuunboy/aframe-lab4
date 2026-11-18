@@ -21,7 +21,7 @@
     <div id="status">Наведите камеру на маркер Hiro</div>
 
     <a-scene embedded
-             arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+             arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; maxDetectionRate: 60;"
              renderer="logarithmicDepthBuffer: true; colorManagement: true"
              vr-mode-ui="enabled: false">
 
@@ -30,11 +30,12 @@
       </a-assets>
 
       <!-- Маркер Hiro: всё, что внутри, привязано к маркеру -->
-      <a-marker id="marker" preset="hiro" smooth="true" smoothCount="5">
+      <!-- smooth*: усреднение позы по последним 10 кадрам убирает дрожание -->
+      <a-marker id="marker" preset="hiro" emitevents="true"
+                smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
         <!-- Сцена из лабораторной 3 (Blender → glTF). Диаметр сцены 16 м,
-             масштаб 0.06 уменьшает её примерно до размера маркера -->
-        <a-entity gltf-model="#scene-model" scale="0.06 0.06 0.06" position="0 0 0"
-                  animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear"></a-entity>
+             масштаб 0.06 — модель примерно размером с маркер (1 единица) и стоит на нём -->
+        <a-entity gltf-model="#scene-model" scale="0.06 0.06 0.06" position="0 0 0"></a-entity>
 
         <!-- Подсветка, чтобы модель не была тёмной -->
         <a-entity light="type: ambient; intensity: 0.7"></a-entity>
@@ -54,6 +55,13 @@
       marker.addEventListener('markerLost', () => {
         status.textContent = 'Наведите камеру на маркер Hiro';
         status.classList.remove('found');
+      });
+      // После поворота телефона AR.js не всегда пересчитывает проекцию камеры,
+      // и модель смещается относительно маркера — перезагружаем страницу
+      let orient = screen.orientation ? screen.orientation.type : window.orientation;
+      window.addEventListener('orientationchange', () => {
+        const now = screen.orientation ? screen.orientation.type : window.orientation;
+        if (now !== orient) location.reload();
       });
     </script>
   </body>
